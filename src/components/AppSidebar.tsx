@@ -26,8 +26,8 @@ import { Badge } from "@/components/ui/badge";
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, badge: null },
-  { title: "Locataires", url: "/locataires", icon: Users, badge: "24" },
-  { title: "Factures", url: "/factures", icon: Receipt, badge: "12" },
+  { title: "Locataires", url: "/locataires", icon: Users, badge: "25" },
+  { title: "Factures", url: "/factures", icon: Receipt, badge: "25" },
   { title: "Propriétés", url: "/proprietes", icon: Building2, badge: null },
 ];
 

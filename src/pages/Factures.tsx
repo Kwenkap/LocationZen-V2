@@ -109,13 +109,13 @@ const Factures = () => {
 
     dataForPdf.push(["","", "", "", "", "","","total Facture", totalMontant  ]);
 
-    doc.autoTable({
+/*     doc.autoTable({
       head: [['N° Logement', 'Locataire', 'Téléphone', 'Ancien Index', 'Nouvel Index', 'Quantité', 'Prix Unitaire', 'Frais Fixe', 'Total']],
       body: dataForPdf,
       startY: 50,
       styles: { fontSize: 10 },
       headStyles: { fillColor: [220, 220, 220] },
-    });
+    }); */
 
     const currentDate = new Date();
     const dateString = `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
