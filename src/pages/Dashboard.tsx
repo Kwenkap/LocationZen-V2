@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +7,48 @@ import { Users, Receipt, DollarSign, TrendingUp, AlertCircle, CheckCircle2 } fro
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
 const Dashboard = () => {
+  const [locataires, setLocataires] = useState<any[]>([]);
+
+  // Récupération des locataires
+  useEffect(() => {
+    const fetchLocataires = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/locataire");
+        setLocataires(response.data);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des locataires:", error);
+      }
+    };
+    fetchLocataires();
+  }, []);
+
+  // Calcul des indicateurs
+  const chambres = locataires.filter(l => l.logement === "chambre" && l.statut);
+  const studios = locataires.filter(l => l.logement === "studio" && l.statut);
+
+  const loyersEnRetard = locataires.filter(l => {
+    const now = new Date();
+    const dateFin = new Date(l.dateFin);
+    return dateFin < now;
+  });
+
+  const facturesNonConfirmees = locataires.filter(
+    l => l.facture && !l.facture.confirme && l.statut
+  );
+
+  const deuxMoisAvantDateFin = new Date();
+  deuxMoisAvantDateFin.setMonth(deuxMoisAvantDateFin.getMonth() + 2);
+
+  const locatairesAvecDateFinDans2Mois = locataires.filter(l => {
+    const dateFin = new Date(l.dateFin);
+    return dateFin >= new Date() && dateFin <= deuxMoisAvantDateFin;
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -29,7 +72,7 @@ const Dashboard = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Locataires"
-            value="24"
+            value={locataires.length.toString()}
             change="+12%"
             changeType="positive"
             icon={Users}
@@ -38,7 +81,7 @@ const Dashboard = () => {
           />
           <StatCard
             title="Factures en Attente"
-            value="12"
+            value={facturesNonConfirmees.length.toString()}
             change="-8%"
             changeType="positive"
             icon={Receipt}
@@ -46,19 +89,19 @@ const Dashboard = () => {
             delay={100}
           />
           <StatCard
-            title="Revenus du Mois"
-            value="45,320 €"
-            change="+23%"
-            changeType="positive"
-            icon={DollarSign}
-            iconColor="bg-success"
+            title="Loyers en Retard"
+            value={loyersEnRetard.length.toString()}
+            change="+5%"
+            // changeType="warning"
+            icon={AlertCircle}
+            iconColor="bg-destructive"
             delay={200}
           />
           <StatCard
-            title="Taux d'Occupation"
-            value="92%"
-            change="+5%"
-            changeType="positive"
+            title="Baux expirant < 2 mois"
+            value={locatairesAvecDateFinDans2Mois.length.toString()}
+            change="+3%"
+            // changeType="warning"
             icon={TrendingUp}
             iconColor="bg-secondary"
             delay={300}
@@ -67,126 +110,65 @@ const Dashboard = () => {
 
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Activity */}
-          <Card className="animate-fade-in-up border-border/50" style={{ animationDelay: "400ms" }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-primary" />
-                Activités Récentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { name: "Jean Dupont", action: "Paiement reçu", amount: "850 €", status: "success" },
-                { name: "Marie Martin", action: "Facture générée", amount: "920 €", status: "pending" },
-                { name: "Pierre Durand", action: "Bail renouvelé", amount: "—", status: "info" },
-                { name: "Sophie Bernard", action: "Paiement en retard", amount: "750 €", status: "warning" },
-              ].map((item, i) => (
-                <div 
-                  key={i} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-sm text-foreground">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">{item.action}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-foreground">{item.amount}</span>
-                    <Badge 
-                      variant={
-                        item.status === "success" ? "default" :
-                        item.status === "warning" ? "destructive" :
-                        "secondary"
-                      }
-                      className={cn(
-                        item.status === "success" && "bg-success hover:bg-success",
-                        item.status === "pending" && "bg-accent hover:bg-accent",
-                        item.status === "info" && "bg-secondary hover:bg-secondary",
-                      )}
-                    >
-                      {item.status === "success" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                      {item.status === "warning" && <AlertCircle className="h-3 w-3 mr-1" />}
-                      {
-                        item.status === "success" ? "Payé" :
-                        item.status === "warning" ? "Retard" :
-                        item.status === "pending" ? "En attente" :
-                        "Info"
-                      }
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+         {/* Activités Récentes */}
+<Card className="animate-fade-in-up border-border/50" style={{ animationDelay: "400ms" }}>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <AlertCircle className="h-5 w-5 text-primary" />
+      Activités Récentes
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    {loyersEnRetard.map((locataire, i) => {
+      // Calcul du montant à payer (loyer × 3)
+      const montantAPayer = locataire.montantLoyer ? locataire.montantLoyer * 3 : 0;
 
-          {/* Quick Actions */}
+      return (
+        <div
+          key={i}
+          className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex-1">
+            <p className="font-medium text-sm text-foreground">{locataire.noms}</p>
+            <p className="text-xs text-muted-foreground">Paiement en retard</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-foreground">
+              {montantAPayer.toLocaleString("fr-FR")} FCFA
+            </span>
+            <Badge
+              variant="destructive"
+              className="bg-destructive hover:bg-destructive"
+            >
+              <AlertCircle className="h-3 w-3 mr-1" />
+              À payer
+            </Badge>
+          </div>
+        </div>
+      );
+    })}
+  </CardContent>
+</Card>
+
+
+          {/* Alertes */}
           <Card className="animate-fade-in-up border-border/50" style={{ animationDelay: "500ms" }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Actions Rapides
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                Alertes
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3">
-              <Button 
-                variant="outline" 
-                className="justify-start h-auto py-4 hover-lift border-border/50"
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">Ajouter un Locataire</p>
-                    <p className="text-xs text-muted-foreground">Enregistrer un nouveau locataire</p>
-                  </div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="justify-start h-auto py-4 hover-lift border-border/50"
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className="p-2 bg-accent/10 rounded-lg">
-                    <Receipt className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">Créer une Facture</p>
-                    <p className="text-xs text-muted-foreground">Générer une nouvelle facture</p>
-                  </div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="justify-start h-auto py-4 hover-lift border-border/50"
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className="p-2 bg-success/10 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-success" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">Enregistrer un Paiement</p>
-                    <p className="text-xs text-muted-foreground">Marquer une facture comme payée</p>
-                  </div>
-                </div>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="justify-start h-auto py-4 hover-lift border-border/50"
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className="p-2 bg-secondary/10 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-secondary" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">Voir les Statistiques</p>
-                    <p className="text-xs text-muted-foreground">Analyser les performances</p>
-                  </div>
-                </div>
-              </Button>
+            <CardContent className="space-y-3">
+              <p className="text-sm">
+                🔴 Loyers en retard : <span className="font-bold">{loyersEnRetard.length}</span>
+              </p>
+              <p className="text-sm">
+                🟠 Factures non confirmées : <span className="font-bold">{facturesNonConfirmees.length}</span>
+              </p>
+              <p className="text-sm">
+                🟡 Baux expirant dans 2 mois : <span className="font-bold">{locatairesAvecDateFinDans2Mois.length}</span>
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -196,7 +178,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
